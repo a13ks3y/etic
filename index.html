@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Endless tic-tac-toe</title>
+    <style type="text/css">
+        body { margin: 0; padding: 0; }
+        #ctx { display: block; margin: auto; }
+    </style>
+</head>
+<body>
+    <canvas id="ctx" width="640" height="480"></canvas>
+    <div class="controls">
+        <label for="ai">
+            Enable AI
+            <input type="checkbox" name="ai" id="ai" title="ai" onchange="app.toggleAI()" />
+        </label>
+        <button id="clear" onclick="app.clear()">Clear</button>
+    </div>
+    <script src="index.js"></script>
+</body>
+</html>
