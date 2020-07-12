@@ -80,7 +80,13 @@ class Field {
             winChain.forEach(item => {
                 item.dir = winChain.dir;
                 item.isWin = true;
-            })
+            });
+            if(!this.block) { 
+                this.block = true;
+                setTimeout(() => {
+                    alert('Player ' + winChain[0].v + ' is win!');                    
+                }, 0xff);
+            }
         }
         this.chains = chains;
     }
@@ -132,13 +138,14 @@ class App {
         return item;
     }
     click(e) {
+        if (this.field.block) return;
         const x = ~~(e.offsetX / SIZE);
         const y = ~~(e.offsetY / SIZE);
         const item = this.field.getItem(x, y);
         if (!item) {
             const currentMove = this.addItem(x, y);
             this.field.check();
-            if (this.AI) {
+            if (this.AI && !this.field.block) {
                 const nextMove = this.suggestNextMove(currentMove);
                 if (!nextMove) throw new Error('Next move is undefiend or null!');
                 this.addItem(nextMove.x, nextMove.y);
@@ -182,9 +189,9 @@ class App {
                 }
             } else {
                 const possibleMoves = n.map(N => N.item ? countdown > 0 && search.call(this, this.field.getN(N.item), countdown - 1) : null).filter(pm => !!pm);
-                result = possibleMoves[0];
+                result = this.AIMove() || possibleMoves[0];
             }    
-            return result || this.AIMove() || this.randomMove(currentMove);
+            return result || this.randomMove(currentMove);
         }).call(this, n);
         console.log('Next move', nextMove);
         return nextMove;
@@ -235,11 +242,13 @@ class App {
         }
     }
     clear() {
+        this.field.block = false;
         this.field.items = {};
+        this.currentPlayer = 'X';
         localStorage.removeItem('items');
-        localStorage.removeItem('AI');
     }
     toggleAI() {
+        this.field.block = false;
         this.AI = !this.AI;
         localStorage.setItem('AI', Number(!!this.AI));
         this.clear();
