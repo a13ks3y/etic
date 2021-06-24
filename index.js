@@ -1,5 +1,57 @@
 const ctx = document.getElementById('ctx').getContext('2d');
 const SIZE = 32;
+const LAYERS_COUNT = 25; // Why 25?
+class Neron {
+    constructor(x, y, v, w, nextLayer) {
+        this.x = x; 
+        this.y = y;        
+        this.v = v;
+        this.w = w;
+        this.nextLayer = nextLayer;
+    }
+    activate() {
+        if(this.v >= this.w) {
+            this.v = 0;
+            if (this.nextLayer) {
+                this.nextLayer.forEach(n => n.activate());
+            }
+        } else {
+            this.v += 1;
+        }
+    }
+}
+class Net {
+    constructor(w, h) {
+        this.w = w;
+        this.h = h;
+        this.layers = [];
+        let nextLayer;
+        for (let i = LAYERS_COUNT - 1; i >= 0; i--) {
+            const layer = this._createLayer(nextLayer);
+            nextLayer = layer;
+            this.layers[i] = layer;
+        }
+        this.input = this.layers[0];
+    }
+    _createLayer(nextLayer) {
+        const layer = [];
+        for(let x = 0; x < this.w; x ++) {
+            for (let y = 0; y < this.h; y++) {
+                const w = ~~(Math.random() * 5)
+                layer.push(new Neron(x, y, 0, w, nextLayer));
+            }
+        }
+        return layer;
+    }
+    activate() {
+        //this.input.forEach(nin => nin.activate());
+    }
+    result(ox = 0, oy = 0) {
+        const lastLayer = this.layers[this.layers.length - 1];
+        return lastLayer.sort((a, b) => b.v - a.v).map(n => { return { x: ox + n.x, y: oy + n.y }; });
+    }
+}
+
 class Field {
     constructor(w, h) {
         this.w = w;
@@ -113,11 +165,13 @@ class App {
         this.ctx = ctx;
         this.ctx.canvas.addEventListener('click', this.click.bind(this));        
         this.AI = !!(Number(localStorage.getItem('AI')));      
-        if (this.AI) document.getElementById('ai').setAttribute('checked', 'checked');  
+        this.NN = !!(Number(localStorage.getItem('NN')));
+        this.updateCheckboxes();
         this.init();
     }
     init() {        
         this.field = new Field(20, 15);
+        this.nn = new Net(5, 5);
         this.currentPlayer = 'X'; // X, O
     }
     start() {
@@ -166,6 +220,19 @@ class App {
         }
     }
     suggestNextMove(currentMove) {
+        if (this.NN) {
+            this.nn.input.forEach(nin => {
+                const item = this.field.getItem(currentMove.x + nin.x, currentMove.y + nin.y);
+                if (item) {
+                    nin.v = item.v == 'X' ? -1 : 1;
+                }
+            });
+            this.nn.activate();
+            const result = this.nn.result(currentMove.x, currentMove.y);
+            console.log(result);
+            return result[0];
+        }
+        
         const n = this.field.getN(currentMove);
         let stop = false;
         const nextMove = (function search(n, countdown = 10) {
@@ -250,9 +317,30 @@ class App {
     toggleAI() {
         this.field.block = false;
         this.AI = !this.AI;
+        //if (this.AI) this.NN = false; 
         localStorage.setItem('AI', Number(!!this.AI));
+        localStorage.setItem('NN', Number(!!this.NN));
         this.clear();
         this.init();
+        setTimeout(() => this.updateCheckboxes(), 0);
+    }
+    toggleNN() {
+        this.field.block = false;
+        this.NN = !this.NN;
+        //if (this.NN) this.AI = false; 
+        localStorage.setItem('AI', Number(!!this.AI));
+        localStorage.setItem('NN', Number(!!this.NN));
+        this.clear();
+        this.init();
+        setTimeout(() => this.updateCheckboxes(), 0);
+    }
+    updateCheckboxes() {
+        const aiEl = document.getElementById('ai');
+        const nnEl = document.getElementById('nn');
+        if (this.AI) aiEl.setAttribute('checked', 'checked');
+        else aiEl.removeAttribute('checked');
+        if (this.NN) nnEl.setAttribute('checked', 'checked');
+        else this.NN && nnEl.removeAttribute('checked');
     }
 }
 const app = new App(ctx);
